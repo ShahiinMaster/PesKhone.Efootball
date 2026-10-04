@@ -4,9 +4,9 @@
 <title>eFootball Cup Online</title>
 <style>
 body{margin:0;background:#07110c;color:#effff6;font-family:Tahoma,Arial}.wrap{max-width:760px;margin:auto;padding:20px}
-.card{background:#0c1d15;border:1px solid #23543a;border-radius:20px;padding:18px;margin:12px 0}
-h1{font-size:27px}input{width:100%;box-sizing:border-box;padding:13px;margin:6px 0 12px;border-radius:11px;border:1px solid #285a40;background:#07140e;color:#fff}
-button{padding:12px 16px;border:0;border-radius:11px;background:#39e98b;font-weight:bold;cursor:pointer}.muted{color:#9bc1ad;font-size:13px;line-height:1.8}.ok{color:#52ef9a}.err{color:#ff8f8f;white-space:pre-wrap;line-height:1.8}
+.card{background:#0c1d15;border:1px solid #23543a;border-radius:20px;padding:18px;margin:12px 0}h1{font-size:27px}
+input{width:100%;box-sizing:border-box;padding:13px;margin:6px 0 12px;border-radius:11px;border:1px solid #285a40;background:#07140e;color:#fff}
+button{padding:12px 16px;border:0;border-radius:11px;background:#39e98b;font-weight:bold;cursor:pointer;margin:3px}.muted{color:#9bc1ad;font-size:13px;line-height:1.8}.ok{color:#52ef9a;line-height:2}.err{color:#ff8f8f;white-space:pre-wrap;line-height:1.8}.cupbox{display:none;margin-top:14px;padding:15px;border:1px solid #39e98b;border-radius:14px}.cupbox a{color:#7fffb6;word-break:break-all}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:0 0 auto}
 </style></head>
 <body><main class="wrap">
 <h1>🏆 eFootball Cup Online</h1>
@@ -15,14 +15,36 @@ button{padding:12px 16px;border:0;border-radius:11px;background:#39e98b;font-wei
 <button id="loginBtn">ورود</button> <button id="signupBtn">ساخت حساب</button><p id="msg" class="muted"></p></div>
 <div class="card"><h2>ساخت کاپ</h2>
 <input id="cupName" placeholder="نام کاپ"><input id="capacity" type="number" min="4" max="32" step="4" value="8" placeholder="ظرفیت"><input id="fee" placeholder="ورودی"><input id="prize" placeholder="جایزه">
-<button id="makeBtn">ساخت کاپ</button><p id="result" class="ok"></p></div>
+<button id="makeBtn">ساخت کاپ</button><p id="result" class="ok"></p>
+<div id="cupBox" class="cupbox"><b>کاپ با موفقیت ساخته شد ✅</b><p id="cupInfo"></p><p><a id="cupLink" href="#" target="_blank"></a></p><button id="copyBtn">کپی لینک</button><button id="openBtn">مشاهده کاپ</button></div>
+</div>
+<div class="card" id="viewCard"><h2>مشاهده کاپ</h2>
+<input id="slug" placeholder="شناسه کاپ"><button id="viewBtn">نمایش کاپ</button><p id="viewMsg" class="muted"></p><div id="viewData"></div></div>
 <div class="card"><h2>ثبت‌نام عمومی</h2>
-<input id="slug" placeholder="شناسه کاپ"><input id="player" placeholder="نام / آیدی بازیکن"><button id="regBtn">ثبت‌نام</button><p id="reg" class="ok"></p></div>
+<input id="regSlug" placeholder="شناسه کاپ"><input id="player" placeholder="نام / آیدی بازیکن"><button id="regBtn">ثبت‌نام</button><p id="reg" class="ok"></p></div>
 <script type="module">
-import {signUp,signIn,createCup,getCup,registerPlayer} from './supabase.js?v=10';
+import {signUp,signIn,createCup,getCup,registerPlayer} from './supabase.js?v=20';
 const $=id=>document.getElementById(id);
-$('signupBtn').onclick=async()=>{const r=await signUp($('email').value,$('password').value);$('msg').textContent=r.error?.message||'حساب ساخته شد؛ ایمیل را بررسی کنید.'};
-$('loginBtn').onclick=async()=>{const r=await signIn($('email').value,$('password').value);$('msg').textContent=r.error?.message||'ورود موفق بود.'};
-$('makeBtn').onclick=async()=>{const out=$('result');out.className='ok';out.textContent='در حال ساخت...';try{const r=await createCup({cupName:$('cupName').value,capacity:$('capacity').value,fee:$('fee').value,prize:$('prize').value});if(r.error)throw r.error;out.textContent='کاپ ساخته شد ✅ لینک عمومی: '+location.origin+'?cup='+r.data.slug;}catch(e){out.className='err';out.textContent=e?.message||String(e)}};
-$('regBtn').onclick=async()=>{const out=$('reg');const c=await getCup($('slug').value);if(c.error){out.textContent='کاپ پیدا نشد: '+c.error.message;return}const r=await registerPlayer(c.data.id,$('player').value);out.textContent=r.error?.message||'ثبت‌نام با موفقیت انجام شد.'};
+const normalizeCup = d => Array.isArray(d) ? d[0] : d;
+let lastCup=null;
+$('signupBtn').onclick=async()=>{const r=await signUp($('email').value,$('password').value);$('msg').textContent=r.error?.message||'حساب ساخته شد؛ اگر تأیید ایمیل فعال است، ایمیل را تأیید کنید.'};
+$('loginBtn').onclick=async()=>{const r=await signIn($('email').value,$('password').value);$('msg').textContent=r.error?.message||'ورود موفق بود. حالا کاپ بسازید.'};
+$('makeBtn').onclick=async()=>{
+ const out=$('result'), box=$('cupBox'); out.className='ok'; out.textContent='در حال ساخت...'; box.style.display='none';
+ try{
+  const r=await createCup({cupName:$('cupName').value,capacity:$('capacity').value,fee:$('fee').value,prize:$('prize').value});
+  if(r.error) throw r.error;
+  const cup=normalizeCup(r.data); if(!cup || !cup.id || !cup.slug) throw new Error('کاپ در دیتابیس ساخته شد، اما اطلاعات برگشتی ناقص است.');
+  lastCup=cup;
+  const url=location.origin+'?cup='+encodeURIComponent(cup.slug);
+  $('cupInfo').textContent=`${cup.name} | ظرفیت: ${cup.capacity} | ورودی: ${cup.fee||'رایگان'} | جایزه: ${cup.prize||'-'}`;
+  $('cupLink').href=url; $('cupLink').textContent=url; $('slug').value=cup.slug; $('regSlug').value=cup.slug; box.style.display='block'; out.textContent='کاپ ساخته شد و اطلاعات آن در پایین نمایش داده شد ✅';
+ }catch(e){out.className='err';out.textContent=e?.message||String(e)}
+};
+$('copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText($('cupLink').href);$('result').textContent='لینک کپی شد ✅'}catch(e){$('result').textContent='کپی خودکار ممکن نیست؛ لینک را نگه دارید و کپی کنید.'}};
+$('openBtn').onclick=()=>{if(lastCup) location.href=location.origin+'?cup='+encodeURIComponent(lastCup.slug)};
+async function showCup(slug){if(!slug)return; $('viewCard').scrollIntoView({behavior:'smooth'});$('slug').value=slug;$('viewMsg').textContent='در حال دریافت اطلاعات...'; const r=await getCup(slug); if(r.error){$('viewMsg').textContent='کاپ پیدا نشد: '+r.error.message;return} const c=normalizeCup(r.data);$('viewData').innerHTML=`<p><b>${c.name}</b></p><p>ظرفیت: ${c.capacity}</p><p>ورودی: ${c.fee||'رایگان'}</p><p>جایزه: ${c.prize||'-'}</p><p>وضعیت: ${c.status||'open'}</p>`;$('viewMsg').textContent='اطلاعات کاپ با موفقیت نمایش داده شد ✅';}
+$('viewBtn').onclick=()=>showCup($('slug').value.trim());
+$('regBtn').onclick=async()=>{const out=$('reg');const c=await getCup($('regSlug').value.trim());if(c.error){out.textContent='کاپ پیدا نشد: '+c.error.message;return}const cup=normalizeCup(c.data);const r=await registerPlayer(cup.id,$('player').value);out.textContent=r.error?.message||'ثبت‌نام با موفقیت انجام شد. ✅'};
+const q=new URLSearchParams(location.search).get('cup'); if(q) showCup(q);
 </script></main></body></html>
