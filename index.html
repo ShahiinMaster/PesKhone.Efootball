@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eFootball Cup Online</title>
+<style>
+body{margin:0;background:#07110c;color:#effff6;font-family:Tahoma,Arial}.wrap{max-width:760px;margin:auto;padding:20px}
+.card{background:#0c1d15;border:1px solid #23543a;border-radius:20px;padding:18px;margin:12px 0}
+h1{font-size:27px}input{width:100%;box-sizing:border-box;padding:13px;margin:6px 0 12px;border-radius:11px;border:1px solid #285a40;background:#07140e;color:#fff}
+button{padding:12px 16px;border:0;border-radius:11px;background:#39e98b;font-weight:bold;cursor:pointer}
+.muted{color:#9bc1ad;font-size:13px;line-height:1.8}.ok{color:#52ef9a}
+</style></head>
+<body><main class="wrap">
+<h1>🏆 eFootball Cup Online</h1>
+<div class="card">
+<h2>ورود برگزارکننده</h2>
+<input id="email" type="email" placeholder="ایمیل">
+<input id="password" type="password" placeholder="رمز عبور">
+<button onclick="login()">ورود</button> <button onclick="signup()">ساخت حساب</button>
+<p id="msg" class="muted"></p>
+</div>
+<div class="card">
+<h2>ساخت کاپ</h2>
+<input id="name" placeholder="نام کاپ">
+<input id="capacity" type="number" min="4" max="32" step="4" value="8" placeholder="ظرفیت">
+<input id="fee" placeholder="ورودی">
+<input id="prize" placeholder="جایزه">
+<button onclick="makeCup()">ساخت کاپ</button>
+<p id="result" class="ok"></p>
+</div>
+<div class="card">
+<h2>ثبت‌نام عمومی</h2>
+<input id="slug" placeholder="شناسه کاپ">
+<input id="player" placeholder="نام / آیدی بازیکن">
+<button onclick="register()">ثبت‌نام</button>
+<p id="reg" class="ok"></p>
+</div>
+<script type="module">
+import {supabase,signUp,signIn,createCup,getCup,registerPlayer} from './supabase.js';
+window.signup=async()=>{let r=await signUp(email.value,password.value);msg.textContent=r.error?.message||'حساب ساخته شد؛ ایمیل را بررسی کنید.'}
+window.login=async()=>{let r=await signIn(email.value,password.value);msg.textContent=r.error?.message||'ورود موفق بود.'}
+window.makeCup=async()=>{try{let r=await createCup({name:name.value,capacity:+capacity.value,fee:fee.value,prize:prize.value});if(r.error)throw r.error;result.textContent='لینک عمومی: '+location.origin+'?cup='+r.data.slug}catch(e){result.textContent=e.message}}
+window.register=async()=>{let c=await getCup(slug.value);if(c.error)return reg.textContent='کاپ پیدا نشد';let r=await registerPlayer(c.data.id,player.value);reg.textContent=r.error?.message||'ثبت‌نام با موفقیت انجام شد.'}
+</script></main></body></html>
