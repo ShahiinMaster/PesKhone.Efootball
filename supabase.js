@@ -12,12 +12,12 @@ export async function signIn(email,password){
 }
 export async function signOut(){ return await supabase.auth.signOut(); }
 
-export async function createCup({name, capacity, fee, prize}){
+export async function createCup({cupName, capacity, fee, prize}){
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError) return { data:null, error:authError };
   if (!authData?.user) return { data:null, error:new Error('ابتدا وارد حساب شوید') };
 
-  const cleanName = String(name ?? '').trim();
+  const cleanName = String(cupName ?? '').trim();
   const cleanCapacity = Number(capacity);
   const cleanFee = String(fee ?? '').trim();
   const cleanPrize = String(prize ?? '').trim();
