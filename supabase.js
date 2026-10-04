@@ -24,19 +24,16 @@ export async function createCup({cupName, capacity, fee, prize}){
   if (!cleanName) return { data:null, error:new Error('نام کاپ را وارد کنید') };
   if (![4,8,16,32].includes(cleanCapacity)) return { data:null, error:new Error('ظرفیت باید 4، 8، 16 یا 32 باشد') };
 
-  const slugBase = cleanName.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g,'-').replace(/^-+|-+$/g,'') || 'cup';
-  const slug = `${slugBase}-${Math.random().toString(36).slice(2,8)}`;
+  // ساخت کاپ از طریق RPC تا owner_id و name داخل خود دیتابیس تعیین شوند.
+  const { data, error } = await supabase.rpc('create_cup', {
+    p_name: cleanName,
+    p_capacity: cleanCapacity,
+    p_fee: cleanFee || 'رایگان',
+    p_prize: cleanPrize || '-'
+  });
 
-  const payload = {
-    owner_id: authData.user.id,
-    name: cleanName,
-    slug,
-    capacity: cleanCapacity,
-    fee: cleanFee || 'رایگان',
-    prize: cleanPrize || '-'
-  };
-
-  return await supabase.from('cups').insert(payload).select().single();
+  if (error) return { data:null, error };
+  return { data, error:null };
 }
 
 export async function getCup(slug){
