@@ -38,6 +38,15 @@ button{padding:12px 16px;border:0;border-radius:11px;background:#39e98b;font-wei
 import {supabase,signUp,signIn,createCup,getCup,registerPlayer} from './supabase.js';
 window.signup=async()=>{let r=await signUp(email.value,password.value);msg.textContent=r.error?.message||'حساب ساخته شد؛ ایمیل را بررسی کنید.'}
 window.login=async()=>{let r=await signIn(email.value,password.value);msg.textContent=r.error?.message||'ورود موفق بود.'}
-window.makeCup=async()=>{try{let r=await createCup({name:name.value,capacity:+capacity.value,fee:fee.value,prize:prize.value});if(r.error)throw r.error;result.textContent='لینک عمومی: '+location.origin+'?cup='+r.data.slug}catch(e){result.textContent=e.message}}
+window.makeCup=async()=>{try{
+  const cupName=document.getElementById('name').value.trim();
+  const cupCapacity=Number(document.getElementById('capacity').value);
+  const cupFee=document.getElementById('fee').value.trim();
+  const cupPrize=document.getElementById('prize').value.trim();
+  if(!cupName) throw new Error('نام کاپ را وارد کنید');
+  let r=await createCup({name:cupName,capacity:cupCapacity,fee:cupFee,prize:cupPrize});
+  if(r.error) throw r.error;
+  result.textContent='لینک عمومی: '+location.origin+'?cup='+r.data.slug;
+}catch(e){result.textContent=e.message}}
 window.register=async()=>{let c=await getCup(slug.value);if(c.error)return reg.textContent='کاپ پیدا نشد';let r=await registerPlayer(c.data.id,player.value);reg.textContent=r.error?.message||'ثبت‌نام با موفقیت انجام شد.'}
 </script></main></body></html>
